@@ -16,13 +16,14 @@ router.post('/createUser', [
     //if there are errors return bad request
     try {
         const errors = validationResult(req);
+        let success = false;
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success, errors: errors.array() });
         }
         //check if the user with same email exits
         let user = await User.findOne({ email: req.body.email })
         if (user) {
-            return res.status(400).json({ error: "Sorry a user with this email already requests" })
+            return res.status(400).json({ success, error: "Sorry a user with this email already requests" })
         }
         //create a new user
         const salt = await bcrypt.genSalt(10);
@@ -38,7 +39,7 @@ router.post('/createUser', [
             }
         }
         const authToken = jwt.sign(data, JWT_SECRET);
-        res.json(authToken);
+        res.json({ success, authToken });
     } catch (err) {
         console.log(err.message);
     }
@@ -57,6 +58,7 @@ router.post('/login', [
 ], async (req, res) => {
     //if there are errors ,return bad request
     const errors = validationResult(req);
+    let success = false;
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
@@ -65,14 +67,14 @@ router.post('/login', [
     try {
         let user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ error: "Sorry,this email does not exist" })
+            return res.status(400).json({ success, error: "Sorry,this email does not exist" })
         }
 
         //password
 
         const passwordCompare = await bcrypt.compare(password, user.password);
         if (!passwordCompare) {
-            return res.status(400).json({ error: "Password incorrect" });
+            return res.status(400).json({ success, error: "Password incorrect" });
         }
 
         const data = {
@@ -82,7 +84,8 @@ router.post('/login', [
         }
 
         const authToken = jwt.sign(data, JWT_SECRET);
-        res.json({ authToken });
+        success = true;
+        res.json({ success, authToken });
 
     } catch (err) {
         console.log(err.message);
